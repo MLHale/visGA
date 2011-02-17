@@ -51,5 +51,5 @@
 	<s:Label x="681" y="306" text="N" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
 	<s:Label x="681" y="327" text="P" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
 	<s:Label y="10" text="Population information" x="10" fontFamily="Verdana"/>
-	<s:Button x="696" y="357" label="Start" fontFamily="Verdana" id="start_btn" click="start_btn_clickHandler(event)" visible="true" enabled="true"/>
+	<s:Button x="720" y="358" label="Start" fontFamily="Verdana" id="start_btn" click="start_btn_clickHandler(event)" visible="true" enabled="true"/>
 </s:Application>
