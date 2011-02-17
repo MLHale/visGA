@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="800" minHeight="600" pageTitle="Matt Hale - Pipe Routing GA" width="800" height="600">
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import spark.events.TextOperationEvent;
+			
+			var m_parameter:int = 0;
+			var n_parameter:int = 0;
+			var p_parameter:int = 0;
+			
+			protected function input_M_changeHandler(event:TextOperationEvent):void
+			{
+				m_parameter = int(input_m.text);
+				output_pane.text = "m_parameter set to: "+m_parameter;
+			}
+
+
+			protected function input_N_changeHandler(event:TextOperationEvent):void
+			{
+				n_parameter = int(input_n.text);
+			}
+
+
+			protected function input_P_changeHandler(event:TextOperationEvent):void
+			{
+				p_parameter = int(input_p.text);
+			}
+
+
+			protected function start_btn_clickHandler(event:MouseEvent):void
+			{
+				//will start the GA
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:TextInput x="696" y="285" id="input_m" width="94" change="input_M_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
+	<s:TextInput x="696" y="306" id="input_n" width="94" change="input_N_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
+	<s:TextInput x="696" y="327" id="input_p" width="94" change="input_P_changeHandler(event)" enabled="true" textAlign="right" text="5"/>
+	<s:Label x="696" text="GA Parameters" width="94" height="18" fontFamily="Verdana" color="#F90A0A" verticalAlign="bottom" y="259"/>
+	<s:TextArea x="10" y="24" id="output_pane" editable="false" height="418"/>
+	<s:Label x="681" y="285" text="M" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+	<s:Label x="681" y="306" text="N" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+	<s:Label x="681" y="327" text="P" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+	<s:Label y="10" text="Population information" x="10" fontFamily="Verdana"/>
+	<s:Button x="696" y="357" label="Start" fontFamily="Verdana" id="start_btn" click="start_btn_clickHandler(event)" visible="true" enabled="true"/>
+</s:Application>
