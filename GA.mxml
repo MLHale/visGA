@@ -1,55 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
-			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="800" minHeight="600" pageTitle="Matt Hale - Pipe Routing GA" width="800" height="600">
-	<s:layout>
-		<s:BasicLayout/>
-	</s:layout>
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="800" minHeight="600" pageTitle="Matt Hale - Pipe Routing GA" width="800" height="600"
+			   creationComplete="init()">
 	<fx:Script>
 		<![CDATA[
 			import spark.events.TextOperationEvent;
 			
-			var m_parameter:int = 0;
-			var n_parameter:int = 0;
-			var p_parameter:int = 0;
+			protected var m_param:int = 0;
+			protected var m_max:int = 20;
+			protected var n_param:int = 0;
+			protected var n_max:int = 20;
+			protected var p_param:int = 0;
+			protected var p_max:int = 20;
 			
-			protected function input_M_changeHandler(event:TextOperationEvent):void
-			{
-				m_parameter = int(input_m.text);
-				output_pane.text = "m_parameter set to: "+m_parameter;
+			protected var console:Boolean = true;
+			protected var debug:Boolean = true;
+			
+
+			protected function init():void{
+				p("Starting the Visual GA application");
+				border.visible = debug;
+				console_group.visible = console;
+				console_group.enabled = console;
+			}
+			
+			//helper functions
+			protected function p(text:String):void{
+				console_pane.text += this+">"+text+"\n";
+			}
+			protected function str(var_name:Object):String{
+				return String(var_name);
+			}
+			
+			protected function input_M_changeHandler(event:TextOperationEvent):void{
+				if (m_param<=m_max){
+					m_param = int(input_m.text);
+					p("m_param set to: "+m_param);
+				}
+				else{
+					input_m.text = str(m_max);
+					m_param = m_max;
+					p("m_param set to m_max: "+m_max);
+				}
+			}
+
+			protected function input_N_changeHandler(event:TextOperationEvent):void{
+				if (n_param<=n_max){
+					n_param = int(input_n.text);
+					p("n_param set to: "+n_param);
+				}
+				else{
+					input_n.text = str(n_max);
+					n_param = n_max;
+					p("n_param set to n_max: "+n_max);
+				}
 			}
 
 
-			protected function input_N_changeHandler(event:TextOperationEvent):void
-			{
-				n_parameter = int(input_n.text);
+			protected function input_P_changeHandler(event:TextOperationEvent):void{
+				if (p_param<=p_max){
+					p_param = int(input_p.text);
+					p("p_param set to: "+p_param);
+				}
+				else{
+					input_p.text = str(p_max);
+					p_param = p_max;
+					p("p_param set to p_max: "+p_max);
+				}
 			}
 
 
-			protected function input_P_changeHandler(event:TextOperationEvent):void
-			{
-				p_parameter = int(input_p.text);
+			protected function run_GA():void{
+				p("Stub function called");
 			}
-
-
-			protected function start_btn_clickHandler(event:MouseEvent):void
-			{
-				//will start the GA
-			}
-
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
-	<s:TextInput x="696" y="285" id="input_m" width="94" change="input_M_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
-	<s:TextInput x="696" y="306" id="input_n" width="94" change="input_N_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
-	<s:TextInput x="696" y="327" id="input_p" width="94" change="input_P_changeHandler(event)" enabled="true" textAlign="right" text="5"/>
-	<s:Label x="696" text="GA Parameters" width="94" height="18" fontFamily="Verdana" color="#F90A0A" verticalAlign="bottom" y="259"/>
-	<s:TextArea x="10" y="24" id="output_pane" editable="false" height="418"/>
-	<s:Label x="681" y="285" text="M" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
-	<s:Label x="681" y="306" text="N" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
-	<s:Label x="681" y="327" text="P" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
-	<s:Label y="10" text="Population information" x="10" fontFamily="Verdana"/>
-	<s:Button x="720" y="357" label="Start" fontFamily="Verdana" id="start_btn" click="start_btn_clickHandler(event)" visible="true" enabled="true"/>
+	
+	<s:BorderContainer x="0" y="0" width="800" height="600" id="border" borderColor="#787676" borderWeight="1">
+		
+
+		<s:Button x="720" y="357" label="Start" fontFamily="Verdana" id="start_btn" click="run_GA()" visible="true" enabled="true"/>
+		<s:Group id="ga_info_group" width="778" height="444" x="10">
+			<s:Label y="10" id="pop_label" text="Population information" x="10" fontFamily="Verdana" fontSize="16"/>
+			<s:TextArea x="10" y="24" id="population_pane" editable="false" height="418" borderVisible="false"/>
+			<s:Label x="267" y="10" text="Generation:" fontSize="23" fontFamily="Verdana" id="gen_label"/>
+			<s:RichText x="422" y="10" fontSize="23" fontFamily="Verdana" width="97" id="gen_box"/>
+		</s:Group>
+		<s:Group id="console_group" x="10" y="444" width="778" height="133">
+			<s:Label text="Output Console" fontFamily="Verdana" id="console_label"  verticalAlign="middle" x="-1" y="6" fontSize="16"/>
+			<s:TextArea width="100%" height="114" id="console_pane" borderVisible="true" x="-1" y="24"/>
+		</s:Group>
+		<s:Group id="parameter_ui" height="408">
+			<s:TextInput x="696" y="285" id="input_m" width="94" change="input_M_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
+			<s:TextInput x="696" y="306" id="input_n" width="94" change="input_N_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
+			<s:TextInput x="696" y="327" id="input_p" width="94" change="input_P_changeHandler(event)" enabled="true" textAlign="right" text="5"/>
+			<s:Label x="696" text="GA Parameters" width="94" height="18" fontFamily="Verdana" color="#F90A0A" verticalAlign="bottom" y="259"/>
+			
+			<s:Label x="681" y="285" text="M" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+			<s:Label x="681" y="306" text="N" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+			<s:Label x="681" y="327" text="P" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+		</s:Group>
+	</s:BorderContainer>
+	
+	
 </s:Application>
