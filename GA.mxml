@@ -2,77 +2,226 @@
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
 			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="800" minHeight="600" pageTitle="Matt Hale - Pipe Routing GA" width="800" height="600"
-			   creationComplete="init()">
+			   creationComplete="init()" xmlns:skins="zen.skins.*">
 	<fx:Script>
 		<![CDATA[
+			import mx.controls.Text;
+			import mx.core.Container;
+			import mx.core.UIComponent;
+			
 			import spark.events.TextOperationEvent;
 			
-			protected var m_param:int = 0;
-			protected var m_max:int = 20;
-			protected var n_param:int = 0;
-			protected var n_max:int = 20;
-			protected var p_param:int = 0;
-			protected var p_max:int = 20;
+			//GA Parameters
+			protected var mutation_rate:Number = 0.05;
+			protected var start_pts_param:int = 3;
+			protected var start_pts_param_max:int = 100;
+			protected var end_pts_param:int = 5;
+			protected var end_pts_param_max:int = 100;
+			protected var obstacles_param:int = 5;
+			protected var obstacles_param_max:int = 100;
+			protected var max_obstacle_height:Number = 80;
+			protected var max_obstacle_width:Number = 80;
+
+			//Graphics objects
+			protected var obstacles:Array = new Array();
+			protected var start_pts:Array = new Array();
+			protected var end_pts:Array = new Array();
 			
+			//UI variables
 			protected var console:Boolean = true;
 			protected var debug:Boolean = true;
+			protected var graphics_xmin:int,graphics_xmax:int;
+			protected var graphics_ymin:int,graphics_ymax:int;
+			// containers( IVisualElements ) for DisplayObjects of each type
+			protected var obstacle_container:UIComponent = new UIComponent();
+			protected var start_pt_container:UIComponent = new UIComponent();
+			protected var end_pt_container:UIComponent = new UIComponent();
 			
-
+			
+			//Called when flex is finished loading the swf
 			protected function init():void{
 				p("Starting the Visual GA application");
-				border.visible = debug;
+				input_start_pts.text = str(start_pts_param);
+				input_end_pts.text = str(end_pts_param);
+				input_obstacles.text = str(obstacles_param);
+				input_mutation_rate.text = str(mutation_rate);
+				//border.visible = debug;
 				console_group.visible = console;
 				console_group.enabled = console;
+				graphics_xmax = rendering_area.x + rendering_area.width;
+				graphics_ymax = rendering_area.y + rendering_area.height;
+				graphics_xmin = rendering_area.x;
+				graphics_ymin = rendering_area.y;
+				p("(x,y),(x_max,y_max) - ("+rendering_area.x+","+rendering_area.y+") ("+graphics_xmax+","+graphics_ymax+")");
+				this.addElement(obstacle_container);
+				this.addElement(start_pt_container);
+				this.addElement(end_pt_container);
 			}
+
+			/* helper functions */
 			
-			//helper functions
 			protected function p(text:String):void{
-				console_pane.text += this+">"+text+"\n";
+				console_pane.appendText(this+">"+text+"\n");
+			}
+			protected function random(n:Number):Number{
+				return Math.floor(Math.random()*n);
 			}
 			protected function str(var_name:Object):String{
 				return String(var_name);
 			}
 			
-			protected function input_M_changeHandler(event:TextOperationEvent):void{
-				if (m_param<=m_max){
-					m_param = int(input_m.text);
-					p("m_param set to: "+m_param);
+			protected function start_pts_changeHandler(event:TextOperationEvent):void{
+				start_pts_param = int(input_start_pts.text);
+				if (start_pts_param<=start_pts_param_max){					
+					p("start_pts_param set to: "+start_pts_param);
 				}
 				else{
-					input_m.text = str(m_max);
-					m_param = m_max;
-					p("m_param set to m_max: "+m_max);
+					input_start_pts.text = str(start_pts_param_max);
+					start_pts_param = start_pts_param_max;
+					p("Invalid value, start_pts_param set to start_pts_param_max: "+start_pts_param_max);
 				}
 			}
 
-			protected function input_N_changeHandler(event:TextOperationEvent):void{
-				if (n_param<=n_max){
-					n_param = int(input_n.text);
-					p("n_param set to: "+n_param);
+			protected function end_pts_changeHandler(event:TextOperationEvent):void{
+				end_pts_param = int(input_end_pts.text);
+				if (end_pts_param<=end_pts_param_max){
+					p("end_pts_param set to: "+end_pts_param);
 				}
 				else{
-					input_n.text = str(n_max);
-					n_param = n_max;
-					p("n_param set to n_max: "+n_max);
+					input_end_pts.text = str(end_pts_param_max);
+					end_pts_param = end_pts_param_max;
+					p("Invalid value, end_pts_param set to end_pts_param_max: "+end_pts_param_max);
 				}
 			}
 
 
-			protected function input_P_changeHandler(event:TextOperationEvent):void{
-				if (p_param<=p_max){
-					p_param = int(input_p.text);
-					p("p_param set to: "+p_param);
+			protected function obstacles_changeHandler(event:TextOperationEvent):void{
+				obstacles_param = int(input_obstacles.text);
+				if (obstacles_param<=obstacles_param_max){
+					p("obstacles_param set to: "+obstacles_param);
 				}
 				else{
-					input_p.text = str(p_max);
-					p_param = p_max;
-					p("p_param set to p_max: "+p_max);
+					input_obstacles.text = str(obstacles_param_max);
+					obstacles_param = obstacles_param_max;
+					p("Invalid value, obstacles_param set to obstacles_param_max: "+obstacles_param_max);
+				}
+			}
+			protected function mutation_rate_changeHandler(event:TextOperationEvent):void{
+				mutation_rate = int(input_mutation_rate.text);
+				if (0<=mutation_rate<=100){
+					p("mutation_rate set to: "+mutation_rate);
+				}
+				else if (mutation_rate < 0){
+					mutation_rate = 0;
+					p("Invalid value, mutation_rate set to: 0");
+				}
+				else if (mutation_rate > 100){
+					mutation_rate = 100;
+					p("Invaled value, mutation_rate set to: 100");
 				}
 			}
 
 
 			protected function run_GA():void{
-				p("Stub function called");
+				p("Building graphics...");
+				initialize_graphics();
+			}
+			protected function random_x():Number{
+				return random(rendering_area.width) + rendering_area.x
+			}
+			protected function random_y():Number{
+				return random(rendering_area.height) + rendering_area.y
+			}
+			
+			protected function place_obstacle():void{
+				//create new rectangle in the rendering area with random area
+				var new_rect:Sprite=new Sprite();
+				
+				// display_object goes to container
+				obstacle_container.addChild(new_rect);
+				new_rect.graphics.beginFill(0x000000);
+				var x:Number = random_x();
+				var y:Number = random_y();
+				var width:Number = random(max_obstacle_width);
+				var height:Number = random(max_obstacle_height);
+				
+				//account for random cases that go beyond the rendering_area boundingbox
+				if ((x + width) > graphics_xmax){
+					width = graphics_xmax - x;
+				}
+				if ((y + height) > graphics_ymax){
+					height = graphics_ymax - y;
+				}
+				new_rect.graphics.drawRect(x,y,width,height);
+				new_rect.graphics.endFill();
+				obstacles[obstacles.length] = new_rect;
+			}
+			
+			
+			protected function place_start_pt(number:String):void{
+				//create new rectangle in the rendering area with random area
+				var new_start_pt:Sprite=new Sprite();
+				
+				// display_object goes to container
+				start_pt_container.addChild(new_start_pt);
+				
+				var x:Number = 0;
+				var y:Number = 0;
+				var radius:Number = 4;
+				var test_point:Point= null;
+				var occupied:Boolean = true;
+				var number_field:TextField = new TextField();
+				number_field.text = number;
+				number_field.selectable = false;
+				new_start_pt.addChild(number_field);
+				new_start_pt.graphics.beginFill(0x00FF00);
+				while(occupied){
+					x = random_x();
+					y = random_y();
+					if (test_point != null){
+						p("Occupied moving from "+test_point.toString()+" to (" + x + "," +y+")");
+					}
+					
+					//account for random cases that go beyond the rendering_area boundingbox
+					if ((x + radius) > graphics_xmax){
+						x = graphics_xmax - radius;
+					}
+					if ((y + radius) > graphics_ymax){
+						y = graphics_ymax - radius;
+					}
+					if ((x - radius) < graphics_xmin){
+						x = graphics_xmin + radius+5;
+					}
+					if ((y - radius) < graphics_ymin){
+						y = graphics_ymin + radius+5;
+					}
+					test_point = new Point(x,y);
+					occupied = false;
+					
+					//max sure start points are not on top of obstacles
+					if (obstacle_container.getObjectsUnderPoint(test_point).length>0){
+						occupied = true;
+					}
+				}
+				new_start_pt.graphics.drawCircle(x,y,radius);
+				new_start_pt.graphics.endFill();
+				
+				start_pts[start_pts.length] = new_start_pt;
+				
+			}
+			protected function initialize_graphics():void{
+				p("Placing obstacles...");
+				for (var i:int = 0; i<obstacles_param; i++){
+					place_obstacle();
+					p("Created obstacle id:" +str(obstacles.length-1));
+				}
+				p("...Done");
+				p("Placing start and end points...");
+				for (var j:int = 0; j<start_pts_param; j++){
+					place_start_pt(str(start_pts.length-1));
+					p("Created start_pt id:" +str(start_pts.length-1));
+				}
+				p("...Done");
 			}
 		]]>
 	</fx:Script>
@@ -83,27 +232,30 @@
 	<s:BorderContainer x="0" y="0" width="800" height="600" id="border" borderColor="#787676" borderWeight="1">
 		
 
-		<s:Button x="720" y="357" label="Start" fontFamily="Verdana" id="start_btn" click="run_GA()" visible="true" enabled="true"/>
-		<s:Group id="ga_info_group" width="778" height="444" x="10">
-			<s:Label y="10" id="pop_label" text="Population information" x="10" fontFamily="Verdana" fontSize="16"/>
-			<s:TextArea x="10" y="24" id="population_pane" editable="false" height="418" borderVisible="false"/>
+		<s:Group id="ga_info_group" width="604" height="37" x="10">
+			<s:Label y="11" id="pop_label" text="Population info:" x="10" fontFamily="Verdana" fontSize="16" textAlign="left"/>
+			<s:TextArea x="0" y="35" id="population_pane" editable="false" height="407" borderVisible="true" width="183"/>
 			<s:Label x="267" y="10" text="Generation:" fontSize="23" fontFamily="Verdana" id="gen_label"/>
 			<s:RichText x="422" y="10" fontSize="23" fontFamily="Verdana" width="97" id="gen_box"/>
 		</s:Group>
-		<s:Group id="console_group" x="10" y="444" width="778" height="133">
-			<s:Label text="Output Console" fontFamily="Verdana" id="console_label"  verticalAlign="middle" x="-1" y="6" fontSize="16"/>
+		<s:Group id="console_group" x="10" y="444" width="608" height="144">
+			<s:Label text="Output Console" fontFamily="Verdana" id="console_label"  verticalAlign="middle" x="2" y="4" fontSize="16"/>
 			<s:TextArea width="100%" height="114" id="console_pane" borderVisible="true" x="-1" y="24"/>
 		</s:Group>
-		<s:Group id="parameter_ui" height="408">
-			<s:TextInput x="696" y="285" id="input_m" width="94" change="input_M_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
-			<s:TextInput x="696" y="306" id="input_n" width="94" change="input_N_changeHandler(event)" enabled="true" text="5" textAlign="right"/>
-			<s:TextInput x="696" y="327" id="input_p" width="94" change="input_P_changeHandler(event)" enabled="true" textAlign="right" text="5"/>
-			<s:Label x="696" text="GA Parameters" width="94" height="18" fontFamily="Verdana" color="#F90A0A" verticalAlign="bottom" y="259"/>
-			
-			<s:Label x="681" y="285" text="M" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
-			<s:Label x="681" y="306" text="N" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
-			<s:Label x="681" y="327" text="P" height="22" verticalAlign="middle" width="11" fontFamily="Verdana"/>
+		<s:Group id="parameter_ui" width="178" height="144" x="620" y="444">
+			<s:TextInput x="104" y="36" id="input_start_pts" width="67" change="start_pts_changeHandler(event)" enabled="true" textAlign="right"/>
+			<s:TextInput x="104" y="56" id="input_end_pts" width="67" change="end_pts_changeHandler(event)" enabled="true" textAlign="right"/>
+			<s:TextInput x="104" y="76" id="input_obstacles" width="67" change="obstacles_changeHandler(event)" enabled="true" textAlign="right"/>
+			<s:TextInput x="104" y="96" id="input_mutation_rate" width="67" change="mutation_rate_changeHandler(event)" enabled="true" textAlign="right"/>
+			<s:Label x="77" y="10" text="GA Parameters" width="94" height="18" fontFamily="Verdana" color="#F90A0A" verticalAlign="bottom" />
+			<s:Label x="37" y="36" text="Start Pts" height="22" verticalAlign="middle" width="63" fontFamily="Verdana" textAlign="right"/>
+			<s:Label x="41" y="56" text="End Pts" height="22" verticalAlign="middle" width="59" fontFamily="Verdana" textAlign="right"/>
+			<s:Label x="37" y="76" text="Obstacles&#xd;" height="22" verticalAlign="middle" width="63" fontFamily="Verdana" textAlign="right"/>
+			<s:Label x="8" y="96" text="Mutation Rate&#xd;" height="22" verticalAlign="middle" width="92" fontFamily="Verdana" textAlign="right"/>
+			<s:Button x="102" y="124" label="Start" fontFamily="Verdana" id="start_btn" click="run_GA()" visible="true" enabled="true"/>
 		</s:Group>
+		<s:BorderContainer width="580" height="407" id="rendering_area" y="36" x="206">
+		</s:BorderContainer>
 	</s:BorderContainer>
 	
 	
