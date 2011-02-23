@@ -37,7 +37,7 @@ protected var end_pts:Array = new Array();
 
 //UI variables
 protected var console:Boolean = true;
-protected var debug:Boolean = true;
+protected var debug:Boolean = false;
 protected var graphics_xmin:int,graphics_xmax:int;
 protected var graphics_ymin:int,graphics_ymax:int;
 // containers( IVisualElements ) for DisplayObjects of each type
@@ -82,10 +82,10 @@ protected function status(text:String):void{
 }
 protected function random(max:Number,...min):Number{
 	if (min[0] > 0){
-		return Math.floor(Math.random() * (max - min[0])) + min[0];
+		return Math.round(Math.random() * (max - min[0])) + min[0];
 	}
 	else{
-		return Math.floor(Math.random()*max);
+		return Math.round(Math.random()*max);
 	}
 }
 protected function str(var_name:Object):String{
@@ -182,13 +182,18 @@ protected function main_loop(evt:Event):void{
 			//GA is setup...begin simulation (event driven)
 			if(!processing_population){
 				//calculate a population
+				if(generation>0){
+					
+				}
 				this.callLater(generate_population,[]);
 			}
 		}
 	}
+	gen_box.text = str(generation);
 }
 protected var started:Boolean = false;
 protected var isPaused:Boolean = false;
+protected var generation:Number=0;
 protected function setup_ga():void{
 	if(!started){
 		started = true;
@@ -215,6 +220,7 @@ protected function setup_ga():void{
 protected var processing_population:Boolean = false;
 protected var processing_individual:Boolean = false;
 protected var member:Individual = new Individual();
+protected var ga_operators:Operators = new Operators();
 protected function generate_population():void{
 	//p("Current member.length"+str(member.length));
 	if(!isPaused){
@@ -223,20 +229,20 @@ protected function generate_population():void{
 			
 			if(member.length == start_pts.length){
 				//only add fully completed arrays
-				trace("member completed...calculating fitness");
-				member.fitness = fitness_function(member);
-				fit_p(member.id + " "+str(member.fitness));
+				if(debug){trace("member completed...calculating fitness");}
+				status("Calculating fitness...");
+				ga_operators.calculate_fitness(member);
+				fit_p("#"+member.id + " -  "+str(member.fitness));
+				p("Fitness for "+member.id+" is "+ str(member.fitness));
 
 				population.addItem(member);
 				
 				//clear current lines
-				trace("Number of children to remove: "+line_container.numChildren);
-				//line_container.removeAllChildren();
+				if(debug){trace("Number of children to remove: "+line_container.numChildren);}
 				this.removeElement(line_container);
 				line_container = new UIComponent();
 				this.addElement(line_container);
-				System.gc();
-				
+
 			}
 			//new member
 			member = new Individual();
@@ -244,8 +250,8 @@ protected function generate_population():void{
 
 			p("Creating individual...");
 			status("Creating individual...");
-			trace("Calling creat_individual (from pop) ");
-			this.callLater(create_individual,[]);	
+			if(debug){trace("Calling create_individual (from pop) ");}
+			this.callLater(create_individual,[]);
 		}
 		else if(processing_individual && population.length < max_pop){
 			//currently processing individual just wait
@@ -256,48 +262,46 @@ protected function generate_population():void{
 			//processing_population = false;
 			//for debug only!!!! - just to get the first generation and stop
 			processing_population = true;
+			generation++;//will cause mutation and crossover to occur
 		}
 	}
 }
 protected function create_individual(curr_line:Number=0):void{
 	processing_individual = true;
-	var new_line:Line=new Line();
+	var new_line_sprite:Sprite = new Sprite();
+	var new_line:Line = new Line();
 	
 	//Points to connect
 	var from:Point = new Point(start_pts[curr_line].x,start_pts[curr_line].y);
 	var to:Point = new Point(end_pts[curr_line].x,end_pts[curr_line].y);
-	
 	// display_object goes to container
-	line_container.addChild(new_line);
-	
-	//commands 1 = moveTo(), 2 = lineTo()
-	var line_commands:Vector.<int> = new Vector.<int>(); 
-	
-	var line_coord:Vector.<Number> = new Vector.<Number>();
-	
+	line_container.addChild(new_line_sprite);
+
 	//generate random x, y path between from and to
 	var curr_pt:Point = random_point(from,to);
-	line_commands.push(1);
-	line_coord.push(from.x,from.y);
-	while(curr_pt.x != to.x && curr_pt.y != to.y){
-		line_commands.push(2);
-		line_coord.push(curr_pt.x,curr_pt.y);
+	new_line.commands.push(1,2);
+	new_line.coords.push(from.x,from.y,curr_pt.x,curr_pt.y);
+	while((curr_pt.x != to.x) || (curr_pt.y != to.y)){
+		if(debug){p("Curr PT: "+curr_pt.toString());}
 		curr_pt = random_point(curr_pt,to);
+		new_line.commands.push(2);
+		new_line.coords.push(curr_pt.x,curr_pt.y);
+		new_line.increment_distance(distance(from.x,from.y,to.x,to.y));
+		//p("Line distance = "+str(new_line.distance));
 	}
+	if(debug){p("From PT: "+from.toString() +" To PT: "+to.toString());}
 
-	p("Created line"+line_coord.toString());
+	//calculate bends
+	new_line.bends=new_line.coords.length/2 - 1;
+	p("Created line: "+new_line.coords.toString());
 	
 	//set line style (thickness, color)
-	new_line.graphics.lineStyle(1,0x000000)
-	new_line.graphics.drawPath(line_commands,line_coord);
+	new_line_sprite.graphics.lineStyle(1,0x000000)
+	new_line_sprite.graphics.drawPath(new_line.commands,new_line.coords);
 	
 	//increment the Individual's total distance
-	var distance_num:Number = 0;
-	distance_num = distance(from.x,from.y,to.x,to.y);
 	member.addItem(new_line);
-	member.increment_distance(distance_num);
-	
-	
+
 	//recursion
 	curr_line++;
 	if(curr_line < start_pts.length){
@@ -307,7 +311,7 @@ protected function create_individual(curr_line:Number=0):void{
 	else{
 		processing_individual = false;
 		status("Calculating lines...DONE");
-		trace("Calling generate_pop() curr_line="+curr_line);
+		if(debug){trace("Calling generate_pop() curr_line="+curr_line);}
 		this.callLater(generate_population,[])
 	}
 }
@@ -315,97 +319,106 @@ protected function distance(x1:Number,y1:Number,x2:Number,y2:Number):Number{
 	return Math.sqrt((Math.pow((x1 - x2),2) + Math.pow((y1 - y2),2))); 
 }
 protected function random_point(from:Point,to:Point):Point{
-	var direction_x:String = "";
-	var direction_y:String = "";
 	var r_point:Point = new Point();
 	
-	
-	if (from.x > to.x){
-		//go east
-		direction_x="E";
-	}
-	else{
-		direction_x="W";
-	}
-	if(from.y > to.y){
-		//go North
-		direction_y="N";
-	}
-	else{
-		direction_y="S";
-	}
-	var axis:Number = random(2);
-	var direction:Number = random(4); //75% chance to go towards to.x 25% to go opposite way
-	if(direction==1){
+	if(debug){p("Need to go in direction: "+direction_x+" , "+ direction_y);}
+	var axis:Number = random(1);
+	var direction:Number = random(9); //90% chance to go towards to.x 10% to go opposite way
+	if(debug){p("Axis: "+str(axis)+", Direction: "+str(direction));}
+	if(axis==0){
+		var direction_x:String = "";
+		if (from.x > to.x){
+			//go east
+			direction_x="W";
+		}
+		else{
+			direction_x="E";
+		}
 		//move along x
 		var x_dist:Number = distance(from.x,0,to.x,0);
-		if(direction_x=="E" && direction>=2){
-			if(x_dist < 100){
+		if(debug){p("X_distance: "+str(x_dist));}
+		if(direction_x=="W" && direction>=1){
+			if(debug){p("Going W");}
+			if(x_dist < 200){
 				r_point.x = to.x;// same as from.x - dist_x
 			}
 			else{
 				r_point.x = from.x - random(x_dist);
 			}
 		}
-		else if(direction_x=="E" && direction==1){
-			//go west even though to.x is to the east - to get over local obstacles (similar to hill climbing)
-			r_point.x = from.x + random(x_dist/2);
+		else if(direction_x=="W" && direction==0){
+			if(debug){p("Going E");}
+			//go east even though to.x is to the west - to get over local obstacles (similar to hill climbing)
+			r_point.x = from.x + random(x_dist/10);
 		}
-		else if(direction_x=="W" && direction>=2){
-			if(x_dist < 100){
+		else if(direction_x=="E" && direction>=1){
+			if(debug){p("Going E");}
+			if(x_dist < 200){
 				r_point.x = to.x;// same as from.x + dist_x
 			}
 			else{
 				r_point.x = from.x + random(x_dist);
 			}
 		}
-		else if(direction_x=="W" && direction==1){
-			//go east even though to.x is to the west - to get over local obstacles (similar to hill climbing)
-			r_point.x = from.x - random(x_dist/2);
+		else if(direction_x=="E" && direction==0){
+			if(debug){p("Going W");}
+			//go west even though to.x is to the east - to get over local obstacles (similar to hill climbing)
+			r_point.x = from.x - random(x_dist/10);
 		}
+		r_point.y = from.y;
+		if(debug){p("coords (from x): "+r_point.x+", "+r_point.y);}
 	}
-	else if(direction==2){
+	else if(axis==1){
+		var direction_y:String = "";
+		if(from.y > to.y){
+			//go North
+			direction_y="N";
+		}
+		else{
+			direction_y="S";
+		}
 		//move along y
 		var y_dist:Number = distance(0,from.y,0,to.y);
-		if(direction_x=="N" && direction>=2){
-			if(y_dist < 100){
+		if(debug){p("y_distance: "+str(y_dist));}
+		if(direction_y=="N" && direction>=1){
+			if(debug){p("Going N");}
+			if(y_dist < 200){
 				r_point.y = to.y;// same as from.y - dist_y
 			}
 			else{
 				r_point.y = from.y - random(y_dist);
 			}
 		}
-		else if(direction_x=="N" && direction==1){
+		else if(direction_y=="N" && direction==0){
+			if(debug){p("Going S");}
 			//go south even though to.y is to the North - to get over local obstacles (similar to hill climbing)
-			r_point.y = from.y + random(y_dist/2);
+			r_point.y = from.y + random(y_dist/10);
 		}
-		else if(direction_x=="S" && direction>=2){
-			if(y_dist < 100){
+		else if(direction_y=="S" && direction>=1){
+			if(debug){p("Going S");}
+			if(y_dist < 200){
 				r_point.y = to.y;// same as from.y + dist_y
 			}
 			else{
 				r_point.y = from.y + random(y_dist);
 			}
 		}
-		else if(direction_x=="S" && direction==1){
+		else if(direction_y=="S" && direction==0){
+			if(debug){p("Going N");}
 			//go North even though to.y is to the South - to get over local obstacles (similar to hill climbing)
-			r_point.y = from.y - random(y_dist/2);
+			r_point.y = from.y - random(y_dist/10);
 		}
+		r_point.x = from.x;
+		if(debug){p("coords (from y): "+r_point.x+", "+r_point.y);}
 	}
-	
 	return r_point;
 }
-protected function fitness_function(member:Individual):Number{
-	var fitness:Number = 0;
-	fitness = member.distance;
-	trace("Fitness = "+member.distance);
-	return fitness;
-}
+
 
 protected var obstacles_placed:Boolean = false;
 protected var start_pts_placed:Boolean = false;
 protected var end_pts_placed:Boolean = false;
-protected var bitmap_obstacles:BitmapData = new BitmapData(rendering_area.width,rendering_area.height,true)
+//protected var bitmap_obstacles:BitmapData = new BitmapData(rendering_area.width,rendering_area.height,true)
 protected function place_obstacles():void{
 	if(!obstacles_placed){
 		//create new rectangle in the rendering area with random area
@@ -426,8 +439,8 @@ protected function place_obstacles():void{
 		if ((y + height) > graphics_ymax){
 			height = graphics_ymax - y;
 		}
-		//new_rect.graphics.drawRect(0,0,width,height);
-		bitmap_obstacles.draw(new_rect);
+		new_rect.graphics.drawRect(0,0,width,height);
+		//bitmap_obstacles.draw(new_rect);
 		new_rect.x = x;
 		new_rect.y = y;
 		new_rect.graphics.endFill();

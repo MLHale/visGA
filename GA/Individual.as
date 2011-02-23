@@ -4,18 +4,16 @@ package GA
 
 	public class Individual extends ArrayList
 	{
+		public var fitness:Number;
+		public var total_distance:Number;
+		public var total_bends:Number;
+		public var id:String;
 		public function Individual(){
 			super();
-		}
-		public var fitness:Number = new Number();
-		public var distance:Number = new Number();
-		public var bends:Number = new Number();
-		public var id:String = new String();
-		public function increment_distance(dist:Number):void{
-			distance +=dist;
-		}
-		public function increment_bends(bds:Number):void{
-			bends += bds;
+			fitness = 0;
+			total_distance = 0;
+			total_bends = 0;
+			id = "";
 		}
 	}
 }

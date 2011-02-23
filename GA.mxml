@@ -22,7 +22,7 @@
 			<s:Label y="11" id="pop_label" text="Population info:" x="10" fontFamily="Verdana" fontSize="16" textAlign="left"/>
 			<s:TextArea x="0" y="35" id="population_pane" editable="false" height="407" borderVisible="true" width="183"/>
 			<s:Label x="267" y="10" text="Generation:" fontSize="23" fontFamily="Verdana" id="gen_label"/>
-			<s:RichText x="422" y="10" fontSize="23" fontFamily="Verdana" width="97" id="gen_box"/>
+			<s:RichText x="422" y="10" fontSize="23" fontFamily="Verdana" width="97" id="gen_box" text="0"/>
 		</s:Group>
 		<s:Group id="console_group" x="10" y="444" width="608" height="144">
 			<s:Label text="Output Console" fontFamily="Verdana" id="console_label"  verticalAlign="middle" x="2" y="4" fontSize="16"/>
