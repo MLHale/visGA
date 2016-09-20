@@ -17,7 +17,7 @@ import spark.effects.animation.Animation;
 import spark.events.TextOperationEvent;
 
 protected var mutation_rate:Number = 0.05;
-protected var start_pts_param:int = 20;
+protected var start_pts_param:int = 10;
 protected var start_pts_param_max:int = 100;
 protected var end_pts_param:int = start_pts_param;
 protected var end_pts_param_max:int = 100;
@@ -46,6 +46,7 @@ protected var start_pt_container:UIComponent = new UIComponent();
 protected var end_pt_container:UIComponent = new UIComponent();
 protected var line_container:UIComponent = new UIComponent();
 
+
 //Called when flex is finished loading the swf
 protected function init():void{
 	p("Starting the Visual GA application");
@@ -61,16 +62,28 @@ protected function init():void{
 	graphics_xmin = rendering_area.x;
 	graphics_ymin = rendering_area.y;
 	p("(x,y),(x_max,y_max) - ("+rendering_area.x+","+rendering_area.y+") ("+graphics_xmax+","+graphics_ymax+")");
+
 	this.addElement(obstacle_container);
 	this.addElement(start_pt_container);
 	this.addElement(end_pt_container);
 	this.addElement(line_container);
+	obstacle_container.cachePolicy="auto";
+	start_pt_container.cachePolicy = "auto";
+	end_pt_container.cachePolicy = "auto"
+	console_pane.cachePolicy = "auto";
 	this.addEventListener(Event.ENTER_FRAME,main_loop);
+
 }
 
 /* helper functions */
 protected function p(text:String):void{
-	console_pane.appendText(this+">"+text+"\n");
+	//console_pane.text += this+">"+text+"\n";
+	
+	//console_pane.scrollToRange(console_pane.text.length,console_pane.text.length);
+	//console_pane.validateNow();
+}
+protected function update_completed():void{
+	trace("++++Update completed++++");
 }
 protected function fit_p(text:String):void{
 	population_pane.appendText(text+"\n");
@@ -183,7 +196,12 @@ protected function main_loop(evt:Event):void{
 			if(!processing_population){
 				//calculate a population
 				if(generation>0){
-					
+					//this will be changed to genetic algorithm code
+					status("Cleaning up...");
+					population_pane.text = "";
+					member = new Individual();
+					population.removeAll();
+					System.gc();
 				}
 				this.callLater(generate_population,[]);
 			}
@@ -194,6 +212,7 @@ protected function main_loop(evt:Event):void{
 protected var started:Boolean = false;
 protected var isPaused:Boolean = false;
 protected var generation:Number=0;
+protected var best_so_far:Number = Infinity;
 protected function setup_ga():void{
 	if(!started){
 		started = true;
@@ -239,6 +258,8 @@ protected function generate_population():void{
 				
 				//clear current lines
 				if(debug){trace("Number of children to remove: "+line_container.numChildren);}
+				best_so_far = ga_operators.best_so_far(member.fitness,best_so_far);
+				best_box.text = "Best - "+str(best_so_far);
 				this.removeElement(line_container);
 				line_container = new UIComponent();
 				this.addElement(line_container);
@@ -259,9 +280,9 @@ protected function generate_population():void{
 		}
 		else{
 			//population is > max_pop = > done processing for now
-			//processing_population = false;
+			processing_population = false;
 			//for debug only!!!! - just to get the first generation and stop
-			processing_population = true;
+			//processing_population = true;
 			generation++;//will cause mutation and crossover to occur
 		}
 	}
@@ -312,18 +333,22 @@ protected function create_individual(curr_line:Number=0):void{
 		processing_individual = false;
 		status("Calculating lines...DONE");
 		if(debug){trace("Calling generate_pop() curr_line="+curr_line);}
+		
 		this.callLater(generate_population,[])
 	}
 }
 protected function distance(x1:Number,y1:Number,x2:Number,y2:Number):Number{
 	return Math.sqrt((Math.pow((x1 - x2),2) + Math.pow((y1 - y2),2))); 
 }
+protected var jump_dist:Number = 50;
+protected var opposite_dir:Number = 5;
+protected var probability_of_opposite:Number = 15;
 protected function random_point(from:Point,to:Point):Point{
 	var r_point:Point = new Point();
 	
 	if(debug){p("Need to go in direction: "+direction_x+" , "+ direction_y);}
 	var axis:Number = random(1);
-	var direction:Number = random(9); //90% chance to go towards to.x 10% to go opposite way
+	var direction:Number = random(99); //90% chance to go towards to.x 10% to go opposite way
 	if(debug){p("Axis: "+str(axis)+", Direction: "+str(direction));}
 	if(axis==0){
 		var direction_x:String = "";
@@ -337,33 +362,46 @@ protected function random_point(from:Point,to:Point):Point{
 		//move along x
 		var x_dist:Number = distance(from.x,0,to.x,0);
 		if(debug){p("X_distance: "+str(x_dist));}
-		if(direction_x=="W" && direction>=1){
+		if(direction_x=="W" && direction>(probability_of_opposite-1)){
 			if(debug){p("Going W");}
-			if(x_dist < 200){
+			if(x_dist < jump_dist){
 				r_point.x = to.x;// same as from.x - dist_x
 			}
 			else{
 				r_point.x = from.x - random(x_dist);
 			}
+			if(r_point.x < graphics_xmin){
+				r_point.x = graphics_xmin;
+			}
 		}
-		else if(direction_x=="W" && direction==0){
+		else if(direction_x=="W" && direction<=(probability_of_opposite-1)){
 			if(debug){p("Going E");}
 			//go east even though to.x is to the west - to get over local obstacles (similar to hill climbing)
-			r_point.x = from.x + random(x_dist/10);
+			r_point.x = from.x + random(x_dist/opposite_dir);
+			if(r_point.x > graphics_xmax){
+				r_point.x = graphics_xmax;
+			}
 		}
-		else if(direction_x=="E" && direction>=1){
+		else if(direction_x=="E" && direction>(probability_of_opposite-1)){
 			if(debug){p("Going E");}
-			if(x_dist < 200){
+			if(x_dist < jump_dist){
 				r_point.x = to.x;// same as from.x + dist_x
 			}
 			else{
 				r_point.x = from.x + random(x_dist);
 			}
 		}
-		else if(direction_x=="E" && direction==0){
+		else if(direction_x=="E" && direction<=(probability_of_opposite-1)){
 			if(debug){p("Going W");}
 			//go west even though to.x is to the east - to get over local obstacles (similar to hill climbing)
-			r_point.x = from.x - random(x_dist/10);
+			r_point.x = from.x - random(x_dist/opposite_dir);
+		}
+		//check bounds of x
+		if(r_point.x > graphics_xmax){//E
+			r_point.x = graphics_xmax;
+		}
+		else if(r_point.x < graphics_xmin){//W
+			r_point.x = graphics_xmin;
 		}
 		r_point.y = from.y;
 		if(debug){p("coords (from x): "+r_point.x+", "+r_point.y);}
@@ -380,35 +418,42 @@ protected function random_point(from:Point,to:Point):Point{
 		//move along y
 		var y_dist:Number = distance(0,from.y,0,to.y);
 		if(debug){p("y_distance: "+str(y_dist));}
-		if(direction_y=="N" && direction>=1){
+		if(direction_y=="N" && direction>(probability_of_opposite-1)){
 			if(debug){p("Going N");}
-			if(y_dist < 200){
+			if(y_dist < jump_dist){
 				r_point.y = to.y;// same as from.y - dist_y
 			}
 			else{
 				r_point.y = from.y - random(y_dist);
 			}
 		}
-		else if(direction_y=="N" && direction==0){
+		else if(direction_y=="N" && direction<=(probability_of_opposite-1)){
 			if(debug){p("Going S");}
 			//go south even though to.y is to the North - to get over local obstacles (similar to hill climbing)
-			r_point.y = from.y + random(y_dist/10);
+			r_point.y = from.y + random(y_dist/opposite_dir);
 		}
-		else if(direction_y=="S" && direction>=1){
+		else if(direction_y=="S" && direction>(probability_of_opposite-1)){
 			if(debug){p("Going S");}
-			if(y_dist < 200){
+			if(y_dist < jump_dist){
 				r_point.y = to.y;// same as from.y + dist_y
 			}
 			else{
 				r_point.y = from.y + random(y_dist);
 			}
 		}
-		else if(direction_y=="S" && direction==0){
+		else if(direction_y=="S" && direction<=(probability_of_opposite-1)){
 			if(debug){p("Going N");}
 			//go North even though to.y is to the South - to get over local obstacles (similar to hill climbing)
-			r_point.y = from.y - random(y_dist/10);
+			r_point.y = from.y - random(y_dist/opposite_dir);
 		}
 		r_point.x = from.x;
+		//check bounds of y
+		if(r_point.y > graphics_ymax){//S
+			r_point.y = graphics_ymax;
+		}
+		else if(r_point.y < graphics_ymin){//N
+			r_point.y = graphics_ymin;
+		}
 		if(debug){p("coords (from y): "+r_point.x+", "+r_point.y);}
 	}
 	return r_point;
@@ -422,7 +467,7 @@ protected var end_pts_placed:Boolean = false;
 protected function place_obstacles():void{
 	if(!obstacles_placed){
 		//create new rectangle in the rendering area with random area
-		var new_rect:Sprite=new Sprite();
+		var new_rect:Shape=new Shape();
 		
 		// display_object goes to container
 		obstacle_container.addChild(new_rect);

@@ -14,10 +14,11 @@
 		</s:Animate>
 	</fx:Declarations>
 
-	
+	<!--<mx:UIComponent id="line_container" >
+	</mx:UIComponent>-->
 	<s:BorderContainer x="0" y="0" width="800" height="600" id="border" borderColor="#787676" borderWeight="1">
 		
-
+		
 		<s:Group id="ga_info_group" width="604" height="37" x="10">
 			<s:Label y="11" id="pop_label" text="Population info:" x="10" fontFamily="Verdana" fontSize="16" textAlign="left"/>
 			<s:TextArea x="0" y="35" id="population_pane" editable="false" height="407" borderVisible="true" width="183"/>
@@ -26,7 +27,8 @@
 		</s:Group>
 		<s:Group id="console_group" x="10" y="444" width="608" height="144">
 			<s:Label text="Output Console" fontFamily="Verdana" id="console_label"  verticalAlign="middle" x="2" y="4" fontSize="16"/>
-			<s:TextArea width="100%" height="114" id="console_pane" borderVisible="true" x="-1" y="24"/>
+			<s:TextArea width="100%" height="114" id="console_pane" borderVisible="true" verticalScrollPolicy="on" x="-1" y="24" text="Currently disabled - discovered flash memory allocation issue causing render performance to slow to a crawl"/>
+			
 		</s:Group>
 		<s:Group id="parameter_ui" width="178" height="144" x="620" y="444">
 			<s:TextInput x="104" y="36" id="input_start_pts" width="67" change="start_pts_changeHandler(event)" enabled="true" textAlign="right"/>
@@ -41,8 +43,10 @@
 			<s:Button x="102" y="124" label="Start" fontFamily="Verdana" id="start_btn" click="setup_ga()" visible="true" enabled="true"/>
 		</s:Group>
 		<s:BorderContainer width="580" height="407" id="rendering_area" y="36" x="206">
+			
 		</s:BorderContainer>
 		<s:RichText x="577" y="10" fontSize="14" fontFamily="Verdana" width="211" id="status_box" height="24"/>
+		<s:RichText x="13" y="425" fontSize="16" fontFamily="Verdana" width="174" id="best_box" text="Best -"/>
 	</s:BorderContainer>
 	
 	

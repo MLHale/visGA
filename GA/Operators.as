@@ -2,6 +2,7 @@ package GA
 {
 	public class Operators
 	{
+		import mx.collections.ArrayList;
 		private var ALPHA:Number = 0.01;
 		private var BETA:Number = 0.1;
 		public function Operators(){
@@ -22,6 +23,9 @@ package GA
 			for(var i:Number =0; i<ind.length; i++){
 				ind.total_distance += ind.getItemAt(i).bends;
 			}
+		}
+		public function best_so_far(test:Number,best:Number):Number{
+			return Math.round(Math.min(test,best));
 		}
 	}
 }
